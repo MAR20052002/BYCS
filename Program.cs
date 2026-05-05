@@ -5,15 +5,36 @@ using BYCS.Infraestructura.Repositorio;
 
 var builder = WebApplication.CreateBuilder(args);
 //builder.WebHost.UseUrls("http://0.0.0.0:8080");
-// Obtener la cadena de conexión desde las variables de entorno
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-                       ?? builder.Configuration.GetConnectionString("BYCSContext");
 
-// Configurar DbContext con Npgsql
+// Intentar obtener DATABASE_URL (Railway)
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+string connectionString;
+
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    // Convertir de formato postgres:// a formato Npgsql
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+
+    connectionString = $"Host={uri.Host};" +
+                       $"Port={uri.Port};" +
+                       $"Database={uri.AbsolutePath.TrimStart('/')};" +
+                       $"Username={userInfo[0]};" +
+                       $"Password={userInfo[1]};" +
+                       $"SSL Mode=Require;Trust Server Certificate=true";
+}
+else
+{
+    // Usar configuración local (appsettings.json)
+    connectionString = builder.Configuration.GetConnectionString("BYCSContext");
+}
+
+// Configurar DbContext
 builder.Services.AddDbContext<BYCS_DBContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
-        npgsqlOptions.EnableRetryOnFailure(); // Intentar reconectar en caso de fallo
+        npgsqlOptions.EnableRetryOnFailure();
     }));
 builder.Services.AddCors(options =>
 {
