@@ -57,7 +57,7 @@ namespace BYCS.Presentacion.Controllers
 
             var EmergenciaCreado = await _EmergenciaRepositorio.PostEmergencia(codigo, ci, descripcion);
             if (EmergenciaCreado == null)
-                return BadRequest("Algo salió mal. Revisa el ci y el formato de fecha");
+                return BadRequest("Algo salió mal. CI no existe o registro duplicado.");
             return CreatedAtAction(nameof(GetEmergencia), new { codigo = EmergenciaCreado.codigo }, EmergenciaCreado);
         }
 
